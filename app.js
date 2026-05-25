@@ -314,16 +314,18 @@ function getLocalStats() {
   const list = JSON.parse(localStorage.getItem("gre_words") || "[]");
   const total = list.length;
   if (total === 0) {
-    return { total: 0, positive: 0, negative: 0, neutral: 0, avg_mastery: 0, needs_review: 0 };
+    return { total: 0, positive: 0, negative: 0, neutral: 0, avg_mastery: 0, needs_review: 0, total_with_example: 0 };
   }
   const sumMastery = list.reduce((sum, w) => sum + w.mastery_score, 0);
+  const totalWithExample = list.filter(w => w.official_example && w.official_example.trim() !== "").length;
   return {
     total,
     positive: list.filter(w => w.sentiment === "positive").length,
     negative: list.filter(w => w.sentiment === "negative").length,
     neutral: list.filter(w => w.sentiment === "neutral").length,
     avg_mastery: (sumMastery / total).toFixed(2),
-    needs_review: list.filter(w => w.mastery_score < 3).length
+    needs_review: list.filter(w => w.mastery_score < 3).length,
+    total_with_example: totalWithExample
   };
 }
 
@@ -733,6 +735,10 @@ function renderStats(stats, words) {
       <div class="stats-row">
         <span>Total words</span>
         <span class="stats-val">${stats.total}</span>
+      </div>
+      <div class="stats-row">
+        <span>Sentence completion pool</span>
+        <span class="stats-val">${stats.total_with_example} / ${stats.total} words</span>
       </div>
       <div class="stats-row">
         <span>Average mastery</span>
