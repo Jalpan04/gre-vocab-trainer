@@ -282,6 +282,7 @@ function getLocalQuiz(sentiment, type = "definition") {
     return {
       word_id: target.id,
       word: target.word,
+      correct_meaning: target.meaning,
       original_sentence: target.official_example,
       blanked_sentence: blankOutWord(target.official_example, target.word),
       options
@@ -641,6 +642,8 @@ async function loadQuiz() {
   $("quiz-word").textContent = "...";
   $("quiz-word").classList.remove("is-sentence");
   $("quiz-options").innerHTML = "";
+  $("quiz-explanation").innerHTML = "";
+  $("quiz-explanation").classList.add("hidden");
   $("btn-next").classList.add("hidden");
 
   // Dynamically update the header label depending on quiz mode
@@ -695,9 +698,28 @@ async function handleQuizAnswer(btn, q) {
     else if (b === btn) b.classList.add("wrong");
   });
 
-  // Educational Reveal: Fill in the blank and highlight the word
-  if (state.quizType === "sentence" && q.original_sentence) {
-    $("quiz-word").innerHTML = highlightWordInSentence(q.original_sentence, q.word);
+  // Educational Reveal: Contextual explanation
+  if (state.quizType === "sentence") {
+    if (q.original_sentence) {
+      $("quiz-word").innerHTML = highlightWordInSentence(q.original_sentence, q.word);
+    }
+    $("quiz-explanation").innerHTML = `
+      <div class="explanation-label">Definition</div>
+      <div class="explanation-text"><span class="explanation-word">${q.word}</span>: ${q.correct_meaning}</div>
+    `;
+    $("quiz-explanation").classList.remove("hidden");
+  } else {
+    // Definition Match: show the official example sentence if available
+    try {
+      const wordObj = getLocalWord(q.word_id);
+      if (wordObj && wordObj.official_example) {
+        $("quiz-explanation").innerHTML = `
+          <div class="explanation-label">Example Usage</div>
+          <div class="explanation-text">"${wordObj.official_example}"</div>
+        `;
+        $("quiz-explanation").classList.remove("hidden");
+      }
+    } catch (_) { /* ignore */ }
   }
 
   // Update score

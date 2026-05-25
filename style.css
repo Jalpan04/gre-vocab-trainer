@@ -650,6 +650,41 @@ html, body {
   font-weight: 700;
 }
 
+/* Quiz Explanation Block */
+.quiz-explanation {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+  animation: quizFadeIn 0.3s ease-in-out forwards;
+}
+
+.explanation-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  margin-bottom: 0.35rem;
+}
+
+.explanation-text {
+  font-size: 0.95rem;
+  color: #a1a1aa;
+  line-height: 1.5;
+}
+
+.explanation-word {
+  color: #ffffff;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+@keyframes quizFadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .quiz-options {
   display: flex;
   flex-direction: column;
