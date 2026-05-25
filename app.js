@@ -24,9 +24,9 @@ const state = {
 // DATABASE SEEDER (LOCAL STORAGE)
 // -------------------------------------------------------
 function initDatabase() {
+  const rawData = INITIAL_DATA; // loaded from seed_data.js
+
   if (!localStorage.getItem("gre_words")) {
-    const rawData = INITIAL_DATA; // loaded from seed_data.js
-    
     // Format vocabulary array
     const words = rawData.words.map((w, idx) => ({
       id: idx + 1,
@@ -54,6 +54,56 @@ function initDatabase() {
     });
 
     localStorage.setItem("gre_words", JSON.stringify(words));
+  } else {
+    // Incremental Sync: Add newly added words in seed_data.js without overwriting user progress
+    let localWords = JSON.parse(localStorage.getItem("gre_words") || "[]");
+    const localWordSet = new Set(localWords.map(w => w.word.trim().toLowerCase()));
+    
+    let hasChanges = false;
+    let maxId = localWords.length > 0 ? Math.max(...localWords.map(w => w.id)) : 0;
+    
+    // Identify and append new words
+    rawData.words.forEach(w => {
+      const wordNorm = w.word.trim().toLowerCase();
+      if (!localWordSet.has(wordNorm)) {
+        maxId++;
+        localWords.push({
+          id: maxId,
+          word: w.word,
+          meaning: w.meaning,
+          official_example: w.official_example || null,
+          sentiment: w.sentiment,
+          intensity: w.intensity,
+          mastery_score: 0,
+          user_sentence: null,
+          related_ids: []
+        });
+        hasChanges = true;
+      }
+    });
+
+    // Re-evaluate related word links for all words
+    if (hasChanges) {
+      const wordMap = {};
+      localWords.forEach(w => { wordMap[w.word.trim().toLowerCase()] = w; });
+
+      rawData.related_pairs.forEach(([a, b]) => {
+        const wa = wordMap[a.trim().toLowerCase()];
+        const wb = wordMap[b.trim().toLowerCase()];
+        if (wa && wb) {
+          if (!wa.related_ids.includes(wb.id)) {
+            wa.related_ids.push(wb.id);
+            hasChanges = true;
+          }
+          if (!wb.related_ids.includes(wa.id)) {
+            wb.related_ids.push(wa.id);
+            hasChanges = true;
+          }
+        }
+      });
+      
+      localStorage.setItem("gre_words", JSON.stringify(localWords));
+    }
   }
 }
 
