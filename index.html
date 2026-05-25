@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GRE Vocab Trainer</title>
+  <meta name="description" content="A personal GRE vocabulary trainer with emotional tagging, mnemonics, and a smart quiz engine." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=9" />
+</head>
+<body>
+
+  <!-- ===== TOP BAR ===== -->
+  <header class="topbar" id="topbar">
+    <button class="back-btn hidden" id="back-btn" aria-label="Go back">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <span class="topbar-title" id="topbar-title">GRE Vocab</span>
+    <button class="add-btn" id="add-btn" aria-label="Add word">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </header>
+
+  <!-- ===== MAIN CONTENT AREA ===== -->
+  <main class="content container" id="content">
+
+    <!-- VIEW: DASHBOARD -->
+    <section class="view" id="view-dashboard">
+      <div class="filter-bar" id="filter-bar">
+        <button class="filter-pill active" data-sentiment="all" id="filter-all">All</button>
+        <button class="filter-pill positive" data-sentiment="positive" id="filter-positive">Positive</button>
+        <button class="filter-pill negative" data-sentiment="negative" id="filter-negative">Negative</button>
+        <button class="filter-pill neutral" data-sentiment="neutral" id="filter-neutral">Neutral</button>
+        <select class="sort-select" id="sort-select" aria-label="Sort words">
+          <option value="">A–Z</option>
+          <option value="mastery_asc">Weakest first</option>
+          <option value="mastery_desc">Strongest first</option>
+        </select>
+      </div>
+      <div class="search-wrap">
+        <input type="search" class="search-input" id="search-input" placeholder="Search words..." autocomplete="off" />
+      </div>
+      <div class="word-list" id="word-list">
+        <div class="skeleton-list" id="skeleton-list">
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: WORD DETAIL -->
+    <section class="view hidden" id="view-detail">
+      <div class="detail-card" id="detail-card">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- VIEW: QUIZ -->
+    <section class="view hidden" id="view-quiz">
+      <div class="quiz-wrap" id="quiz-wrap">
+        <div class="quiz-header">
+          <span class="quiz-label">What does this word mean?</span>
+          <div class="quiz-filter-row">
+            <label class="quiz-filter-label" for="quiz-sentiment-filter">Focus:</label>
+            <select class="quiz-sentiment-select" id="quiz-sentiment-filter">
+              <option value="">All words</option>
+              <option value="positive">Positive</option>
+              <option value="negative">Negative</option>
+              <option value="neutral">Neutral</option>
+            </select>
+          </div>
+        </div>
+        <div class="quiz-word-card" id="quiz-word-card">
+          <span class="quiz-word" id="quiz-word">—</span>
+        </div>
+        <div class="quiz-options" id="quiz-options">
+          <!-- Populated by JS -->
+        </div>
+        <button class="btn-next hidden" id="btn-next">Next Question</button>
+      </div>
+    </section>
+
+    <!-- VIEW: STATS -->
+    <section class="view hidden" id="view-stats">
+      <div class="stats-wrap" id="stats-wrap">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- VIEW: ADD WORD -->
+    <section class="view hidden" id="view-add">
+      <form class="add-form" id="add-form" novalidate>
+        <h2 class="form-title">Add New Word</h2>
+
+        <label class="form-label" for="add-word">Word</label>
+        <input class="form-input" id="add-word" type="text" placeholder="e.g. mellifluous" autocomplete="off" required />
+
+        <label class="form-label" for="add-meaning">Meaning</label>
+        <textarea class="form-textarea" id="add-meaning" placeholder="Official dictionary meaning..." rows="3" required></textarea>
+
+        <label class="form-label" for="add-example">Example sentence (optional)</label>
+        <textarea class="form-textarea" id="add-example" placeholder="Official example..." rows="2"></textarea>
+
+        <label class="form-label">Sentiment</label>
+        <div class="sentiment-picker" id="add-sentiment-picker">
+          <button type="button" class="sent-btn positive" data-value="positive" id="add-sent-positive">Positive</button>
+          <button type="button" class="sent-btn neutral active" data-value="neutral" id="add-sent-neutral">Neutral</button>
+          <button type="button" class="sent-btn negative" data-value="negative" id="add-sent-negative">Negative</button>
+        </div>
+        <input type="hidden" id="add-sentiment-value" value="neutral" />
+
+        <label class="form-label">Intensity <span class="intensity-hint" id="add-intensity-hint">3</span></label>
+        <div class="intensity-dots-picker" id="add-intensity-picker" data-value="3">
+          <button type="button" class="dot-btn filled" data-dot="1"></button>
+          <button type="button" class="dot-btn filled" data-dot="2"></button>
+          <button type="button" class="dot-btn filled" data-dot="3"></button>
+          <button type="button" class="dot-btn" data-dot="4"></button>
+          <button type="button" class="dot-btn" data-dot="5"></button>
+        </div>
+
+        <label class="form-label" for="add-related-search">Related Words (optional)</label>
+        <div class="related-search-wrap" id="add-related-wrap">
+          <input class="form-input" id="add-related-search" type="text" placeholder="Type to search..." autocomplete="off" />
+          <div class="related-dropdown hidden" id="add-related-dropdown"></div>
+          <div class="related-chips" id="add-related-chips"></div>
+        </div>
+        <input type="hidden" id="add-related-ids" value="[]" />
+
+        <div class="form-error hidden" id="add-error"></div>
+        <button type="submit" class="btn-submit" id="add-submit">Add Word</button>
+      </form>
+    </section>
+
+  </main>
+
+  <!-- ===== BOTTOM NAV ===== -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="nav-item active" data-view="dashboard" id="nav-dashboard" aria-label="Word list">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      <span>Words</span>
+    </button>
+    <button class="nav-item" data-view="quiz" id="nav-quiz" aria-label="Quiz">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>Quiz</span>
+    </button>
+    <button class="nav-item" data-view="stats" id="nav-stats" aria-label="Stats">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span>Stats</span>
+    </button>
+  </nav>
+
+  <script src="seed_data.js"></script>
+  <script src="app.js?v=8"></script>
+</body>
+</html>
