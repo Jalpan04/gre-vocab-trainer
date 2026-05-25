@@ -15,6 +15,7 @@ const state = {
   currentSort: "",
   quizData: null,
   quizAnswered: false,
+  quizType: "definition",  // definition | sentence
   addRelatedIds: [],
   addIntensity: 3,
   addSentiment: "neutral",
@@ -216,13 +217,21 @@ function searchLocalWords(q) {
   return list.filter(w => w.word.toLowerCase().startsWith(q.trim().toLowerCase())).slice(0, 10);
 }
 
-function getLocalQuiz(sentiment) {
+function getLocalQuiz(sentiment, type = "definition") {
   let list = JSON.parse(localStorage.getItem("gre_words") || "[]");
   if (sentiment) {
     list = list.filter(w => w.sentiment === sentiment);
   }
+  
+  if (type === "sentence") {
+    // Only pool words that have a valid example sentence
+    list = list.filter(w => w.official_example && w.official_example.trim() !== "");
+  }
+
   if (list.length < 4) {
-    throw new Error("Need at least 4 words in the database to generate a quiz.");
+    throw new Error(type === "sentence" 
+      ? "Need at least 4 words with official example sentences under this category to generate a sentence quiz."
+      : "Need at least 4 words in the database to generate a quiz.");
   }
   
   // Bias toward lower mastery scores
@@ -251,20 +260,40 @@ function getLocalQuiz(sentiment) {
     }
   }
   
-  const options = [
-    { word_id: target.id, meaning: target.meaning },
-    ...distractors.map(d => ({ word_id: d.id, meaning: d.meaning }))
-  ];
+  let options;
+  if (type === "sentence") {
+    // Distractors are words
+    options = [
+      { word_id: target.id, word: target.word },
+      ...distractors.map(d => ({ word_id: d.id, word: d.word }))
+    ];
+  } else {
+    // Distractors are meanings
+    options = [
+      { word_id: target.id, meaning: target.meaning },
+      ...distractors.map(d => ({ word_id: d.id, meaning: d.meaning }))
+    ];
+  }
   
   // Random shuffle options
   options.sort(() => Math.random() - 0.5);
   
-  return {
-    word_id: target.id,
-    word: target.word,
-    correct_meaning: target.meaning,
-    options
-  };
+  if (type === "sentence") {
+    return {
+      word_id: target.id,
+      word: target.word,
+      original_sentence: target.official_example,
+      blanked_sentence: blankOutWord(target.official_example, target.word),
+      options
+    };
+  } else {
+    return {
+      word_id: target.id,
+      word: target.word,
+      correct_meaning: target.meaning,
+      options
+    };
+  }
 }
 
 function updateLocalScore(wordId, correct) {
@@ -608,11 +637,19 @@ async function loadQuiz() {
   const sentiment = $("quiz-sentiment-filter").value || "";
 
   $("quiz-word").textContent = "...";
+  $("quiz-word").classList.remove("is-sentence");
   $("quiz-options").innerHTML = "";
   $("btn-next").classList.add("hidden");
 
+  // Dynamically update the header label depending on quiz mode
+  if (state.quizType === "sentence") {
+    $("quiz-label").textContent = "Which word fits in the blank?";
+  } else {
+    $("quiz-label").textContent = "What does this word mean?";
+  }
+
   try {
-    state.quizData = getLocalQuiz(sentiment);
+    state.quizData = getLocalQuiz(sentiment, state.quizType);
     renderQuiz();
   } catch (e) {
     $("quiz-wrap").innerHTML = `<div class="empty-state">${e.message}</div>`;
@@ -621,11 +658,22 @@ async function loadQuiz() {
 
 function renderQuiz() {
   const q = state.quizData;
-  $("quiz-word").textContent = q.word;
 
-  $("quiz-options").innerHTML = q.options.map((opt, i) =>
-    `<button class="quiz-option" data-id="${opt.word_id}" id="quiz-opt-${i}">${opt.meaning}</button>`
-  ).join("");
+  if (state.quizType === "sentence") {
+    $("quiz-word").classList.add("is-sentence");
+    $("quiz-word").textContent = q.blanked_sentence;
+
+    $("quiz-options").innerHTML = q.options.map((opt, i) =>
+      `<button class="quiz-option" data-id="${opt.word_id}" id="quiz-opt-${i}">${opt.word}</button>`
+    ).join("");
+  } else {
+    $("quiz-word").classList.remove("is-sentence");
+    $("quiz-word").textContent = q.word;
+
+    $("quiz-options").innerHTML = q.options.map((opt, i) =>
+      `<button class="quiz-option" data-id="${opt.word_id}" id="quiz-opt-${i}">${opt.meaning}</button>`
+    ).join("");
+  }
 
   $("quiz-options").querySelectorAll(".quiz-option").forEach((btn) => {
     btn.addEventListener("click", () => handleQuizAnswer(btn, q));
@@ -644,6 +692,11 @@ async function handleQuizAnswer(btn, q) {
     if (Number(b.dataset.id) === q.word_id) b.classList.add("correct");
     else if (b === btn) b.classList.add("wrong");
   });
+
+  // Educational Reveal: Fill in the blank and highlight the word
+  if (state.quizType === "sentence" && q.original_sentence) {
+    $("quiz-word").innerHTML = highlightWordInSentence(q.original_sentence, q.word);
+  }
 
   // Update score
   try {
@@ -888,6 +941,31 @@ $("search-input").addEventListener("input", applySearch);
 $("btn-next").addEventListener("click", loadQuiz);
 
 $("quiz-sentiment-filter").addEventListener("change", loadQuiz);
+
+// Quiz Type Tab Switchers
+document.querySelectorAll(".quiz-type-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".quiz-type-btn").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    state.quizType = btn.dataset.type;
+    loadQuiz();
+  });
+});
+
+// -------------------------------------------------------
+// UTILITY HELPERS FOR SENTENCE MODE
+// -------------------------------------------------------
+function blankOutWord(sentence, word) {
+  const escaped = word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const regex = new RegExp('\\b' + escaped + '[a-zA-Z]*\\b', 'gi');
+  return sentence.replace(regex, '________');
+}
+
+function highlightWordInSentence(sentence, word) {
+  const escaped = word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const regex = new RegExp('\\b(' + escaped + '[a-zA-Z]*)\\b', 'gi');
+  return sentence.replace(regex, '<span class="sentence-highlight">$1</span>');
+}
 
 // -------------------------------------------------------
 // INIT

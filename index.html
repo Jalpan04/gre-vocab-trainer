@@ -63,8 +63,12 @@
     <!-- VIEW: QUIZ -->
     <section class="view hidden" id="view-quiz">
       <div class="quiz-wrap" id="quiz-wrap">
+        <div class="quiz-type-selector" id="quiz-type-selector">
+          <button type="button" class="quiz-type-btn active" data-type="definition" id="quiz-type-definition">Definition Match</button>
+          <button type="button" class="quiz-type-btn" data-type="sentence" id="quiz-type-sentence">Sentence Completion</button>
+        </div>
         <div class="quiz-header">
-          <span class="quiz-label">What does this word mean?</span>
+          <span class="quiz-label" id="quiz-label">What does this word mean?</span>
           <div class="quiz-filter-row">
             <label class="quiz-filter-label" for="quiz-sentiment-filter">Focus:</label>
             <select class="quiz-sentiment-select" id="quiz-sentiment-filter">
