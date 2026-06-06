@@ -1,5 +1,7 @@
 # GRE Vocab Trainer
 
+![GitHub top language](https://img.shields.io/github/languages/top/Jalpan04/gre-vocab-trainer) ![GitHub repo size](https://img.shields.io/github/repo-size/Jalpan04/gre-vocab-trainer) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A modern, interactive frontend web application designed to help students master GRE vocabulary. It features a smart quiz engine, emotional/sentiment tagging, mnemonics, and performance statistics.
 
 ## Features
